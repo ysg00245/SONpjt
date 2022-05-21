@@ -1,13 +1,9 @@
-<<<<<<< HEAD
-#1111
-
-=======
 #5555 Test Modify from inmost
 #4444 Test Modify from inmost
 #3333 Test Modify from inmost
 #2222 Test Modify from inmost
 #1111 
->>>>>>> 23d030d061030c7a49bf99129f3bd8e32071b7eb
+
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
