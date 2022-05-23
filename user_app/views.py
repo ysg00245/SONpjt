@@ -9,10 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 import pymysql, json, random, string
 
-
 def null(request) :
     return HttpResponse('Null Page..')
-
 
 @csrf_exempt
 def join(request) :
@@ -31,7 +29,12 @@ def join(request) :
 
     if rows :
         conn.close()
-        data = json.dumps(rows)
+        tuto = rows["tutorial_yn"]
+
+        if tuto == "N" :
+            data = "튜토리얼 미완료"
+        else :
+            data = "튜토리얼 완료"
     else :
         sql = """
         INSERT INTO djangotest.zu_user_tmp (uid, member_id, platfrom_type, platfrom_id, push_id, tutorial_yn, audit_dtm)
@@ -42,11 +45,10 @@ def join(request) :
         conn.close()
         insert_cnt = curs.rowcount
         if insert_cnt == 1 :
-            data = "신규계정이 임시저장 되었습니다."
+            data = "신규계정이 임시저장 되었습니다"
         else :
-            data = "계정등록에 실패하였습니다."
-return HttpResponse(data)
-
+            data = "계정등록에 실패하였습니다"
+    return HttpResponse(data)
 
 @csrf_exempt
 def login(request) :
@@ -61,10 +63,10 @@ def login(request) :
     uuid = request.GET.get('uuid')
 
     if uid == '' or uid is None :
-        return HttpResponse("유저고유ID(UID)는 필수 입력값입니다.")
+        return HttpResponse("유저고유ID(UID)는 필수 입력값입니다")
     if nick == '' or nick is None :
         if request.method == 'POST' :
-            return HttpResponse("닉네임(NICK)은 필수 입력값입니다.")
+            return HttpResponse("닉네임(NICK)은 필수 입력값입니다")
     # 클라에서 기본적으로 신규유저, 기존유저를 체크해서..
     # 신규유저면 POST.., 기존유저면 GET으로 요청을 한다는 조건하에.. 아래의 로직을 생성.
     if ssid == '' or ssid is None :
