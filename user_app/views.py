@@ -1,10 +1,3 @@
-#5555 Test Modify from inmost
-#4444 Test Modify from inmost
-#3333 Test Modify from inmost
-#2222 Test Modify from inmost
-#1111 
-
-# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 #from django.shortcuts import render
@@ -15,8 +8,44 @@ from django.views.decorators.csrf import csrf_exempt
 
 import pymysql, json, random, string
 
+
 def null(request) :
     return HttpResponse('Null Page..')
+
+
+@csrf_exempt
+def join(request) :
+    conn = pymysql.connect(host="27.96.130.7", port=3306, user="root", password="!Qpp041096", db="djangotest", charset="utf8")
+    curs = conn.cursor(pymysql.cursors.DictCursor)
+
+    uid           = request.GET.get('uid')
+    member_id     = request.GET.get('member_id')
+    platfrom_type = request.GET.get('platfrom_type')
+    platfrom_id   = request.GET.get('platfrom_id')
+    push_id       = request.GET.get('push_id')
+
+    sql = "select uid, tutorial_yn FROM zu_user_tmp WHERE uid = %s"
+    curs.execute(sql, uid)
+    rows = curs.fetchone()
+
+    if rows :
+        conn.close()
+        data = json.dumps(rows)
+    else :
+        sql = """
+        INSERT INTO djangotest.zu_user_tmp (uid, member_id, platfrom_type, platfrom_id, push_id, tutorial_yn, audit_dtm)
+        VALUES(%s, %s, %s, %s, %s, 'N', now());
+        """
+        curs.execute(sql, (uid, member_id, platfrom_type, platfrom_id, push_id))
+        conn.commit()
+        conn.close()
+        insert_cnt = curs.rowcount
+        if insert_cnt == 1 :
+            data = "신규계정이 임시저장 되었습니다."
+        else :
+            data = "계정등록에 실패하였습니다."
+return HttpResponse(data)
+
 
 @csrf_exempt
 def login(request) :
