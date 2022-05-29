@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-#from django.shortcuts import render
-
-#from http.client import responses
 from django.shortcuts import render, HttpResponse, redirect
 from django.views.decorators.csrf import csrf_exempt
 
 import pymysql, json, random, string
 
+
 def null(request) :
     return HttpResponse('Null Page..')
+
 
 @csrf_exempt
 def login(request) :
@@ -23,10 +22,12 @@ def login(request) :
     platform_id   = request.GET.get('platform_id')
     push_id       = request.GET.get('push_id')
 
-    sql = "select 'true' result, if(tutorial_yn = 'N', 'false', 'true') tutorial FROM zu_user_tmp WHERE uid = %s"
-    curs.execute(sql, uid)
+    login_info_sql = "select 'true' result, if(tutorial_yn = 'N', 'false', 'true') tutorial FROM zu_user_tmp WHERE uid = %s"
+    curs.execute(login_info_sql, uid)
     rows = curs.fetchone()
 
+    # DB에서 조회가 안되었을때 예외처리를(Catch try) 해야 함..
+    # 현재 예외처리는 조회가 되었다 안되었다 뿐이라서.. 정확한 예외처리라 볼 수 없음.
     if rows :
         conn.close()
         data = json.dumps(rows)
@@ -41,20 +42,17 @@ def login(request) :
         insert_cnt = curs.rowcount
 
         if insert_cnt == 1 :
-            data = {
-                "result" : 'true',
-                "tutorial" : 'false'
-            }
+            curs.execute(login_info_sql, uid)
+            rows = curs.fetchone()
+            data = json.dumps(rows)
         else :
             data = {
                 "result" : 'false',
-                "type" : 'err'
+                "type" : 'err',
                 "msg" : "계정등록에 실패하였습니다"
             }
             data = json.dumps(data, ensure_ascii=False)
             return HttpResponse(data, status=500)
-
-        data = json.dumps(data, ensure_ascii=False)
     return HttpResponse(data)
 
 
@@ -74,9 +72,9 @@ def info(request) :
 
     if uid == '' or uid is None :
         data = {
-                "result" : 'false',
-                "type" : 'err',
-                "msg" : "유저고유ID(UID)는 필수 입력값입니다"
+            "result" : 'false',
+            "type" : 'err',
+            "msg" : "유저고유ID(UID)는 필수 입력값입니다"
         }
         data = json.dumps(data, ensure_ascii=False)
         return HttpResponse(data, status=400)
@@ -176,6 +174,44 @@ def info(request) :
 @csrf_exempt
 def inven(request) :
     conn = pymysql.connect(host="27.96.130.7", port=3306, user="root", password="!Qpp041096", db="djangotest", charset="utf8")
-    curs = conn.cursor(pymysql.cursors.DictCursor)
+    curs = conn.cursor()
 
+    uid = request.GET.get('uid')
+
+    cahr_info_sql = "select uid, char_uid, char_idx, type, grade, enchant_lv, DATE_FORMAT(get_dt, '%%Y%%m%%d') get_dt FROM zu_user_char_inven WHERE uid = %s"
+    curs.execute(cahr_info_sql, uid)
+    rows = curs.fetchall()
+    select_cnt = curs.rowcount
+
+    if rows :
+        data = json.dumps(rows)
+    else :
+        # 원래는 NFD 오류로 뱉어야 하나..
+        # 현재는 테스트상황이기에 데이터가 없을경우 임의로 Insert함..
+        #data = {
+        #    "result" : 'false',
+        #    "type" : 'err',
+        #    "msg" : "저장된 캐릭터 정보가 없습니다"
+        #}
+        sql = """
+            INSERT INTO zu_user_char_inven (uid, char_uid, char_idx, type, grade, enchant_lv, get_dt, audit_dtm)
+            VALUES(%s, 1, 1001, 'A', 'E', 0, DATE_FORMAT(now(), '%%Y%%m%%d'), now());
+        """
+        curs.execute(sql, uid)
+        if curs.rowcount == 1 :
+            conn.commit()
+
+            curs.execute(cahr_info_sql, uid)
+            rows = curs.fetchall()
+            data = json.dumps(rows)
+        else :
+            conn.close()
+            data = {
+                "result" : 'false',
+                "type" : 'err',
+                "msg" : "계정등록에 실패하였습니다"
+            }
+            data = json.dumps(data, ensure_ascii=False)
+            return HttpResponse(data, status=500)
+    conn.close()
     return HttpResponse(data)
